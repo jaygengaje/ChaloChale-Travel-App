@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChaloChale | Explore the World</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* ===== 3D travelling carousel hero ===== */
+    .hero3d {
+      position: relative;
+      height: 92vh;
+      min-height: 580px;
+      perspective: 1400px;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: pan-y;
+      background:
+        radial-gradient(ellipse at 50% 120%, rgba(255,193,7,.18), transparent 55%),
+        radial-gradient(ellipse at 50% -20%, rgba(13,110,253,.25), transparent 60%),
+        linear-gradient(160deg, #0b1020 0%, #141b34 55%, #0b1020 100%);
+    }
+    .hero3d::before {
+      content: "";
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+      pointer-events: none;
+    }
+    .hero3d-scene {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+    .hero3d-floor {
+      position: absolute; left: 50%; bottom: 6%;
+      width: 720px; height: 220px;
+      transform: translateX(-50%) rotateX(72deg);
+      background: radial-gradient(ellipse, rgba(255,193,7,.28), rgba(255,193,7,.05) 55%, transparent 72%);
+      filter: blur(6px);
+      pointer-events: none;
+    }
+    .hero3d-track {
+      position: relative;
+      width: min(360px, 78vw);
+      height: min(460px, 68vh);
+      transform-style: preserve-3d;
+      transition: transform .9s cubic-bezier(.22,.9,.28,1);
+    }
+    .hero3d-track.no-anim { transition: none; }
+    .hero3d-card {
+      position: absolute; inset: 0;
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      border-radius: 24px;
+      overflow: hidden;
+      cursor: pointer;
+      box-shadow: 0 34px 70px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.08) inset;
+      transition: opacity .55s ease, filter .55s ease;
+      background: #1a2340;
+    }
+    .hero3d-card img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+      transform: translateZ(1px);
+      -webkit-user-drag: none;
+      user-select: none;
+      -webkit-user-select: none;
+      pointer-events: none;
+    }
+    .hero3d-card::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, rgba(5,8,20,.05) 30%, rgba(5,8,20,.88) 100%);
+      pointer-events: none;
+    }
+    .hero3d-card .cap {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      padding: 26px 26px 28px;
+      color: #fff;
+      transform: translateZ(2px);
+    }
+    .hero3d-card .cap h1, .hero3d-card .cap h2 { font-size: 1.9rem; font-weight: 800; text-shadow: 0 2px 14px rgba(0,0,0,.6); }
+    .hero3d-card .cap p { color: #dfe6f5; margin: .35rem 0 .9rem; }
+    .hero3d-card .cap .btn { pointer-events: auto; }
+    .hero3d-card .badge-pop {
+      position: absolute; top: 18px; left: 18px;
+      background: rgba(255,193,7,.95); color: #141414;
+      font-weight: 700; font-size: .75rem; letter-spacing: .08em;
+      padding: .4rem .7rem; border-radius: 999px;
+      text-transform: uppercase;
+      transform: translateZ(3px);
+    }
+    .hero3d-title {
+      position: absolute; top: 7%; left: 0; right: 0;
+      text-align: center; color: #fff; z-index: 5;
+      pointer-events: none;
+      text-shadow: 0 4px 24px rgba(0,0,0,.5);
+    }
+    .hero3d-title .kick { color: #ffc107; letter-spacing: .35em; font-size: .8rem; font-weight: 700; text-transform: uppercase; }
+    .hero3d-title h2 { font-size: clamp(1.6rem, 4vw, 2.6rem); font-weight: 800; margin: 0; }
+    .hero3d-nav {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 52px; height: 52px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(10,14,30,.45); color: #fff;
+      backdrop-filter: blur(6px);
+      font-size: 1.1rem; z-index: 6;
+      transition: background .25s, transform .25s, box-shadow .25s;
+    }
+    .hero3d-nav:hover { background: #ffc107; color: #141414; transform: translateY(-50%) scale(1.12); box-shadow: 0 0 24px rgba(255,193,7,.55); }
+    .hero3d-nav.prev { left: max(16px, 4vw); }
+    .hero3d-nav.next { right: max(16px, 4vw); }
+    .hero3d-dots {
+      position: absolute; bottom: 26px; left: 0; right: 0;
+      display: flex; justify-content: center; gap: 10px; z-index: 6;
+    }
+    .hero3d-dots button {
+      width: 10px; height: 10px; border-radius: 999px;
+      border: none; padding: 0;
+      background: rgba(255,255,255,.35);
+      transition: width .3s, background .3s;
+      cursor: pointer;
+    }
+    .hero3d-dots button.active { width: 30px; background: #ffc107; }
+    .hero3d-hint {
+      position: absolute; bottom: 60px; left: 0; right: 0;
+      text-align: center; color: rgba(255,255,255,.55);
+      font-size: .78rem; letter-spacing: .18em; text-transform: uppercase;
+      z-index: 5; pointer-events: none;
+    }
+    @media (max-width: 576px) {
+      .hero3d { min-height: 520px; height: 85vh; }
+      .hero3d-card .cap h1, .hero3d-card .cap h2 { font-size: 1.4rem; }
+      .hero3d-title { top: 4%; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero3d-track { transition-duration: .01s; }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top"><div class="container">
+<a class="navbar-brand fw-bold" href="index.html"><i class="fa-solid fa-plane-departure text-warning"></i> ChaloChale</a>
+<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#menu" aria-controls="menu" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+<div class="collapse navbar-collapse" id="menu"><ul class="navbar-nav ms-auto"><li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+<li class="nav-item"><a class="nav-link" href="destinations.html">Destinations</a></li>
+<li class="nav-item"><a class="nav-link" href="packages.html">Packages</a></li>
+<li class="nav-item"><a class="nav-link" href="booking.html">Booking</a></li>
+<li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+<li class="nav-item"><a class="nav-link" href="about.html">About</a></li></ul>
+<a href="signup.html" class="btn btn-warning ms-lg-3 mt-2 mt-lg-0">Signup</a><a href="login.html" class="btn btn-warning ms-lg-3 mt-2 mt-lg-0">Login</a></div></div></nav>
+
+<header class="hero3d" id="hero3d">
+  <div class="hero3d-title">
+    <div class="kick">ChaloChale Travel</div>
+    <h2>Spin the globe. Pick your adventure.</h2>
+  </div>
+  <div class="hero3d-scene" id="heroScene">
+    <div class="hero3d-floor"></div>
+    <div class="hero3d-track" id="heroTrack"></div>
+  </div>
+  <div class="hero3d-hint">Drag, swipe or use arrow keys to explore</div>
+  <button class="hero3d-nav prev" id="heroPrev" aria-label="Previous slide"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="hero3d-nav next" id="heroNext" aria-label="Next slide"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="hero3d-dots" id="heroDots"></div>
+</header>
+
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-4"><p class="section-tag">WHY TRAVEL WITH US</p><h2 class="section-title">Travel made simple</h2><p class="text-muted">Everything you need for a smooth and memorable trip.</p></div>
+    <div class="row g-4 text-center">
+      <div class="col-12 col-sm-6 col-lg-3"><div class="service-box"><i class="fa-solid fa-wallet"></i><h5>Best Prices</h5><p>Great experiences at pocket-friendly prices.</p></div></div>
+      <div class="col-12 col-sm-6 col-lg-3"><div class="service-box"><i class="fa-solid fa-map-location-dot"></i><h5>Handpicked Places</h5><p>Explore destinations selected with care.</p></div></div>
+      <div class="col-12 col-sm-6 col-lg-3"><div class="service-box"><i class="fa-solid fa-headset"></i><h5>24/7 Support</h5><p>We are here whenever you need assistance.</p></div></div>
+      <div class="col-12 col-sm-6 col-lg-3"><div class="service-box"><i class="fa-solid fa-shield-heart"></i><h5>Safe Travel</h5><p>Travel confidently with helpful guidance.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5 bg-light">
+  <div class="container">
+    <div class="d-flex flex-wrap justify-content-between align-items-end mb-4"><div><p class="section-tag">TOP PLACES</p><h2 class="section-title mb-0">Popular destinations</h2></div><a href="destinations.html" class="btn btn-outline-dark mt-3">View all</a></div>
+    <div class="row g-4">
+      <div class="col-12 col-md-6 col-lg-4"><div class="card travel-card h-100"><img src="https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Manali mountains"><div class="card-body"><h5 class="card-title">Manali, Himachal Pradesh</h5><p class="card-text text-muted">Snowy peaks, pine forests and mountain adventures.</p><button class="btn btn-outline-primary" data-destination="Manali" data-bs-toggle="modal" data-bs-target="#bookingModal">Book trip</button></div></div></div>
+      <div class="col-12 col-md-6 col-lg-4"><div class="card travel-card h-100"><img src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Goa beach"><div class="card-body"><h5 class="card-title">Goa</h5><p class="card-text text-muted">Golden beaches, lively markets and coastal sunsets.</p><button class="btn btn-outline-primary" data-destination="Goa" data-bs-toggle="modal" data-bs-target="#bookingModal">Book trip</button></div></div></div>
+      <div class="col-12 col-md-6 col-lg-4"><div class="card travel-card h-100"><img src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Taj Mahal"><div class="card-body"><h5 class="card-title">Agra, Uttar Pradesh</h5><p class="card-text text-muted">Discover India's timeless history and architecture.</p><button class="btn btn-outline-primary" data-destination="Agra" data-bs-toggle="modal" data-bs-target="#bookingModal">Book trip</button></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="py-5">
+  <div class="container">
+    <div class="text-center mb-4"><p class="section-tag">TRAVEL DEALS</p><h2 class="section-title">Featured packages</h2><p class="text-muted">Choose a package and start planning.</p></div>
+    <div class="row g-4">
+      <div class="col-12 col-md-6 col-lg-4"><div class="card package-card h-100"><img src="https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Manali package"><div class="card-body"><span class="badge text-bg-success">Adventure</span><h5 class="mt-2">Manali Escape</h5><p class="text-muted">4 days / 3 nights · Hotel · Breakfast</p><div class="d-flex justify-content-between align-items-center"><strong class="price">₹9,999</strong><button class="btn btn-primary" data-destination="Manali Escape" data-bs-toggle="modal" data-bs-target="#bookingModal">Book now</button></div></div></div></div>
+      <div class="col-12 col-md-6 col-lg-4"><div class="card package-card h-100"><img src="https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Goa package"><div class="card-body"><span class="badge text-bg-info">Beach</span><h5 class="mt-2">Goa Getaway</h5><p class="text-muted">3 days / 2 nights · Hotel · Sightseeing</p><div class="d-flex justify-content-between align-items-center"><strong class="price">₹7,499</strong><button class="btn btn-primary" data-destination="Goa Getaway" data-bs-toggle="modal" data-bs-target="#bookingModal">Book now</button></div></div></div></div>
+      <div class="col-12 col-md-6 col-lg-4"><div class="card package-card h-100"><img src="https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=900&q=80" class="card-img-top" alt="Agra package"><div class="card-body"><span class="badge text-bg-warning">Culture</span><h5 class="mt-2">Agra Heritage Tour</h5><p class="text-muted">2 days / 1 night · Hotel · Guided tour</p><div class="d-flex justify-content-between align-items-center"><strong class="price">₹5,499</strong><button class="btn btn-primary" data-destination="Agra Heritage Tour" data-bs-toggle="modal" data-bs-target="#bookingModal">Book now</button></div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="newsletter py-5"><div class="container text-center"><h2 class="fw-bold">Ready for your next adventure?</h2><p>Contact our team and let us help plan your holiday.</p><a href="contact.html" class="btn btn-warning btn-lg">Get in touch</a></div></section>
+
+<footer class="footer py-4"><div class="container"><div class="row g-3 align-items-center"><div class="col-md-6"><h5 class="mb-1"><i class="fa-solid fa-plane-departure text-warning"></i> ChaloChale</h5><small>Explore more. Worry less. Travel happy.</small></div><div class="col-md-6 text-md-end"><a href="index.html">Home</a><a href="destinations.html">Destinations</a><a href="packages.html">Packages</a><a href="contact.html">Contact</a></div></div><hr><p class="text-center small mb-0">© 2026 ChaloChale Travel App. Student practice project.</p></div></footer>
+
+<div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title" id="bookingModalLabel">Plan your trip</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+    <div class="modal-body">
+      <form id="bookingForm">
+        <div class="mb-3"><label for="fullName" class="form-label">Full name</label><input type="text" class="form-control" id="fullName" required></div>
+        <div class="mb-3"><label for="email" class="form-label">Email address</label><input type="email" class="form-control" id="email" required></div>
+        <div class="mb-3"><label for="destination" class="form-label">Destination / package</label><input type="text" class="form-control" id="destination" placeholder="Where would you like to go?" required></div>
+        <div class="row"><div class="col-6 mb-3"><label for="travelDate" class="form-label">Travel date</label><input type="date" class="form-control" id="travelDate" required></div><div class="col-6 mb-3"><label for="travellers" class="form-label">Travellers</label><input type="number" class="form-control" id="travellers" min="1" value="1" required></div></div>
+        <button type="submit" class="btn btn-primary w-100">Submit booking request</button>
+      </form>
+      <div id="bookingMessage" class="alert alert-success mt-3 d-none" role="alert">Thank you! Your demo booking request has been received.</div>
+    </div>
+  </div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/script.js"></script>
+<script>
+// ===== 3D travelling carousel =====
+(function () {
+  const track = document.getElementById("heroTrack");
+  const scene = document.getElementById("heroScene");
+  const dotsWrap = document.getElementById("heroDots");
+  const header = document.getElementById("hero3d");
+  if (!track) return;
+
+  const slides = [
+    { img: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=80", badge: "Mountains", title: "Your Journey, Our Passion", text: "Discover beautiful places and unforgettable experiences.", cta: '<a href="destinations.html" class="btn btn-warning btn-lg">Explore Destinations</a>' },
+    { img: "https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1200&q=80", badge: "Beaches", title: "Find Your Happy Place", text: "Handpicked holidays for every kind of traveller.", cta: '<a href="packages.html" class="btn btn-warning btn-lg">View Packages</a>' },
+    { img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80", badge: "Adventure", title: "Make Memories That Last", text: "Plan your next adventure with ChaloChale.", cta: '<button class="btn btn-warning btn-lg" data-bs-toggle="modal" data-bs-target="#bookingModal">Plan a Trip</button>' },
+    { img: "https://images.unsplash.com/photo-1595815771614-ade9d652a65d?auto=format&fit=crop&w=1200&q=80", badge: "Manali", title: "Manali Escape", text: "Snowy peaks, pine forests and mountain adventures.", cta: '<a href="packages.html" class="btn btn-warning btn-lg">Book This Trip</a>' },
+    { img: "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=1200&q=80", badge: "Goa", title: "Goa Getaway", text: "Golden beaches, lively markets and coastal sunsets.", cta: '<a href="packages.html" class="btn btn-warning btn-lg">Book This Trip</a>' },
+    { img: "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=1200&q=80", badge: "Culture", title: "Agra Heritage Tour", text: "Discover India's timeless history and architecture.", cta: '<a href="packages.html" class="btn btn-warning btn-lg">Book This Trip</a>' }
+  ];
+
+  const N = slides.length;
+  const STEP = 360 / N;
+  const RADIUS = 310; // px — distance of each card from carousel centre
+  let rotation = 0;   // degrees the whole ring has turned
+  let autoTimer = null;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Build cards
+  const cards = slides.map(function (s, i) {
+    const el = document.createElement("div");
+    el.className = "hero3d-card";
+    el.style.transform = "rotateY(" + (i * STEP) + "deg) translateZ(" + RADIUS + "px)";
+    el.innerHTML =
+      '<span class="badge-pop">' + s.badge + '</span>' +
+      '<img src="' + s.img + '" alt="' + s.title + '">' +
+      '<div class="cap"><h2>' + s.title + '</h2><p>' + s.text + '</p>' + s.cta + '</div>';
+    el.addEventListener("click", function () { goTo(i); });
+    track.appendChild(el);
+    return el;
+  });
+
+  // Build dots
+  const dots = slides.map(function (s, i) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-label", "Go to slide " + (i + 1));
+    b.addEventListener("click", function () { goTo(i); });
+    dotsWrap.appendChild(b);
+    return b;
+  });
+
+  function norm(a) {
+    a = ((a % 360) + 360) % 360;
+    return a > 180 ? a - 360 : a;
+  }
+
+  function update() {
+    track.style.transform = "rotateY(" + rotation + "deg)";
+    let front = 0, best = Infinity;
+    cards.forEach(function (card, i) {
+      const world = norm(rotation + i * STEP);
+      const dist = Math.abs(world);
+      const opacity = Math.max(0.18, 1 - dist / 105);
+      card.style.opacity = opacity.toFixed(3);
+      card.style.filter = world < 0
+        ? "brightness(" + (0.55 + opacity * 0.45).toFixed(3) + ") saturate(" + (0.6 + opacity * 0.4).toFixed(3) + ")"
+        : "brightness(" + (0.45 + opacity * 0.55).toFixed(3) + ") saturate(" + (0.7 + opacity * 0.3).toFixed(3) + ")";
+      card.style.zIndex = String(Math.round(1000 - dist));
+      card.style.pointerEvents = dist < STEP * 0.9 ? "auto" : "none";
+      if (dist < best) { best = dist; front = i; }
+    });
+    dots.forEach(function (d, i) { d.classList.toggle("active", i === front); });
+  }
+
+  function goTo(i) {
+    // shortest-path rotation so it never spins the long way
+    const target = -i * STEP;
+    let delta = norm(target - rotation);
+    rotation += delta;
+    update();
+    restartAuto();
+  }
+
+  function next() { goTo(frontIndex() + 1 < N ? frontIndex() + 1 : 0); }
+  function prev() { goTo(frontIndex() - 1 >= 0 ? frontIndex() - 1 : N - 1); }
+
+  function frontIndex() {
+    let idx = 0, best = Infinity;
+    for (let i = 0; i < N; i++) {
+      const d = Math.abs(norm(rotation + i * STEP));
+      if (d < best) { best = d; idx = i; }
+    }
+    return idx;
+  }
+
+  function restartAuto() {
+    if (reducedMotion) return;
+    clearInterval(autoTimer);
+    autoTimer = setInterval(function () {
+      // keep spinning forward continuously
+      rotation -= STEP;
+      update();
+    }, 4200);
+  }
+
+  // Arrow buttons
+  document.getElementById("heroNext").addEventListener("click", function () { next(); });
+  document.getElementById("heroPrev").addEventListener("click", function () { prev(); });
+
+  // Keyboard controls
+  document.addEventListener("keydown", function (e) {
+    const t = e.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
+  });
+
+  // Auto-spin runs constantly — hovering does NOT pause it.
+  // It only stops while the left mouse button is held down (manual drag).
+
+  // Drag / swipe to spin
+  let dragging = false, startX = 0, startRot = 0, moved = false, resumeTimer = null;
+
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    track.classList.remove("no-anim");
+    const dx = (e && e.clientX !== undefined ? e.clientX : startX) - startX;
+    if (Math.abs(dx) > 40) {
+      goTo(frontIndex() + (dx < 0 ? 1 : -1));
+    } else if (moved || Math.abs(dx) > 10) {
+      goTo(frontIndex()); // snap back to nearest card
+    }
+    // resume auto-spin shortly after release
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(restartAuto, 1500);
+  }
+
+  scene.addEventListener("pointerdown", function (e) {
+    if (e.pointerType === "mouse" && e.button !== 0) return; // left button only
+    e.preventDefault(); // stop native drag / text selection
+    clearInterval(autoTimer);
+    clearTimeout(resumeTimer);
+    dragging = true; moved = false;
+    startX = e.clientX; startRot = rotation;
+    track.classList.add("no-anim");
+    // NOTE: no setPointerCapture here — it would swallow clicks on buttons.
+    // Capture is enabled lazily once a real drag begins (see pointermove).
+  });
+  scene.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    if (Math.abs(dx) > 6) {
+      moved = true;
+      try { scene.setPointerCapture(e.pointerId); } catch (err) {}
+    }
+    rotation = startRot - dx * 0.35;
+    update();
+  });
+  window.addEventListener("pointerup", endDrag);
+  window.addEventListener("pointercancel", function () { endDrag(null); });
+
+  // Block native image/text dragging anywhere in the hero
+  header.addEventListener("dragstart", function (e) { e.preventDefault(); });
+  scene.addEventListener("click", function (e) {
+    if (moved) { e.stopPropagation(); e.preventDefault(); }
+  }, true);
+
+  // Mouse tilt for a game-like feel
+  let tiltRAF = null;
+  header.addEventListener("mousemove", function (e) {
+    if (dragging || reducedMotion) return;
+    const r = header.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    if (tiltRAF) cancelAnimationFrame(tiltRAF);
+    tiltRAF = requestAnimationFrame(function () {
+      scene.style.transform = "rotateX(" + (-py * 7).toFixed(2) + "deg) rotateY(" + (px * 9).toFixed(2) + "deg)";
+    });
+  });
+  header.addEventListener("mouseleave", function () {
+    if (tiltRAF) cancelAnimationFrame(tiltRAF);
+    scene.style.transform = "";
+  });
+
+  update();
+  restartAuto();
+})();
+</script>
+</body>
+</html>
